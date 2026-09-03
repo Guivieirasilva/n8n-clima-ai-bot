@@ -10,6 +10,8 @@ Como recurso adicional, o projeto utiliza o **Google Gemini** para transformar o
 
 ---
 
+<img width="701" height="908" alt="Image" src="https://github.com/user-attachments/assets/3dfc1d43-074b-4a84-881c-55860738ead9" />
+
 # Objetivo
 
 Desenvolver uma automação utilizando **n8n** capaz de:
