@@ -1,0 +1,115 @@
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:2.37.1
+    container_name: n8n-clima-ai-bot
+    restart: always
+    volumes:
+      - ./n8n-data:/home/node/.n8n
+    ports:
+      - "5678:5678"
+    environment:
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      - TZ=${TZ}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - N8N_EDITOR_BASE_URL=${N8N_EDITOR_BASE_URL}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=${N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS}
+      - N8N_RUNNERS_ENABLE=${N8N_RUNNERS_ENABLE}
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=${N8N_BLOCK_ENV_ACCESS_IN_NODE}
+      - N8N_GIT_NODE_DISABLE_BARE_REPO=${N8N_GIT_NODE_DISABLE_BARE_REPO}
+      - DB_TYPE=${DB_TYPE}
+      - DB_POSTGRESDB_DATABASE=${DB_POSTGRESDB_DATABASE}
+      - DB_POSTGRESDB_HOST=${DB_POSTGRESDB_HOST}
+      - DB_POSTGRESDB_PORT=${DB_POSTGRESDB_PORT}
+      - DB_POSTGRESDB_USER=${DB_POSTGRESDB_USER}
+      - DB_POSTGRESDB_PASSWORD=${DB_POSTGRESDB_PASSWORD}
+      - EXECUTIONS_MODE=${EXECUTIONS_MODE}
+      - QUEUE_BULL_REDIS_HOST=${QUEUE_BULL_REDIS_HOST}
+      - OFFLOAD_MANUAL_EXECUTIONS_TO_WORKER=${OFFLOAD_MANUAL_EXECUTIONS_TO_WORKER}
+    networks:
+      - clima-ai-network
+    depends_on:
+      - postgres
+      - redis
+
+  n8n-worker:
+    image: docker.n8n.io/n8nio/n8n:2.37.1
+    container_name: n8n-clima-ai-bot-worker
+    command: worker
+    volumes:
+      - ./n8n-data:/home/node/.n8n
+    ports:
+      - "5679:5678"
+    environment:
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      - TZ=${TZ}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - N8N_EDITOR_BASE_URL=${N8N_EDITOR_BASE_URL}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=${N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS}
+      - N8N_RUNNERS_ENABLE=${N8N_RUNNERS_ENABLE}
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=${N8N_BLOCK_ENV_ACCESS_IN_NODE}
+      - N8N_GIT_NODE_DISABLE_BARE_REPO=${N8N_GIT_NODE_DISABLE_BARE_REPO}
+      - DB_TYPE=${DB_TYPE}
+      - DB_POSTGRESDB_DATABASE=${DB_POSTGRESDB_DATABASE}
+      - DB_POSTGRESDB_HOST=${DB_POSTGRESDB_HOST}
+      - DB_POSTGRESDB_PORT=${DB_POSTGRESDB_PORT}
+      - DB_POSTGRESDB_USER=${DB_POSTGRESDB_USER}
+      - DB_POSTGRESDB_PASSWORD=${DB_POSTGRESDB_PASSWORD}
+      - EXECUTIONS_MODE=${EXECUTIONS_MODE}
+      - QUEUE_BULL_REDIS_HOST=${QUEUE_BULL_REDIS_HOST}
+      - OFFLOAD_MANUAL_EXECUTIONS_TO_WORKER=${OFFLOAD_MANUAL_EXECUTIONS_TO_WORKER}
+    networks:
+      - clima-ai-network
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16
+    container_name: n8n-postgres
+    restart: always
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${DB_POSTGRESDB_USER}
+      - POSTGRES_PASSWORD=${DB_POSTGRESDB_PASSWORD}
+      - POSTGRES_DB=${DB_POSTGRESDB_DATABASE}
+    ports:
+      - "5432:5432"
+    networks:
+      - clima-ai-network
+
+  redis:
+    image: redis:7
+    container_name: n8n-redis
+    restart: always
+    volumes:
+      - ./redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - clima-ai-network
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: n8n-ngrok
+    ports:
+      - "4040:4040"
+    volumes:
+      - ./ngrok.yml:/etc/ngrok.yml
+    command:
+      - "http"
+      - "--domain=${NGROK_DOMAIN}"
+      - "n8n-clima-ai-bot:5678"
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    restart: always
+    networks:
+      - clima-ai-network
+    depends_on:
+      - n8n
+
+networks:
+  clima-ai-network:
+    driver: bridge
