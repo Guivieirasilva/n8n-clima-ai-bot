@@ -1,0 +1,585 @@
+{
+  "name": "Clima AI Bot - Telegram + OpenWeather",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "849f6a6c-85a4-4ef5-8cde-2fd4a40cbc38",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2368,
+        448
+      ],
+      "webhookId": "368980ce-deae-4a35-ab92-28824dc4fe2f",
+      "credentials": {
+        "telegramApi": {
+          "id": "hM9yV5btB4oFwoRy",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "chat-id",
+              "name": "chatId",
+              "value": "={{ $json.message.chat.id }}",
+              "type": "string"
+            },
+            {
+              "id": "raw-message",
+              "name": "rawMessage",
+              "value": "={{ $json.message.text || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "dd7f31e4-ed46-4360-83ad-0a0dc120f3b8",
+      "name": "Capturar Mensagem",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2128,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "entrada-valida",
+              "leftValue": "={{ $json.rawMessage.trim() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0bcd23e5-734a-4b4a-a6af-1534ddcf0f9d",
+      "name": "Validar Entrada",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1888,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "queue",
+              "name": "queue",
+              "value": "={{ \n  $json.rawMessage.split(',')[1] \n    ? `${$json.rawMessage.split(',')[0].trim()},${$json.rawMessage.split(',')[1].trim()},${$json.rawMessage.split(',')[2] ? $json.rawMessage.split(',')[2].trim() : 'BR'}`\n    : `${$json.rawMessage.split(',')[0].trim()},BR`\n}}",
+              "type": "string"
+            },
+            {
+              "id": "9fe9e471-9d16-4b8b-a9f9-5bdf5ec339ca",
+              "name": "city",
+              "value": "={{ $json.rawMessage.split(',')[0] ? $json.rawMessage.split(',')[0].trim() : '' }}",
+              "type": "string"
+            },
+            {
+              "id": "8d755f4a-ed9c-40f9-82fe-5feea237442b",
+              "name": "uf",
+              "value": "={{ $json.rawMessage.split(',')[1] ? $json.rawMessage.split(',')[1].trim() : '' }}",
+              "type": "string"
+            },
+            {
+              "id": "1c3aa018-56b1-4a11-af5f-22637864df25",
+              "name": "country",
+              "value": "={{ $json.rawMessage.split(',')[2] ? $json.rawMessage.split(',')[2].trim() : 'BR' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1aeb1f5b-3365-4ef3-a7a8-b98bf62cf72c",
+      "name": "Normalizar Entrada",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1648,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.openweathermap.org/data/2.5/weather",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.queue }}"
+            },
+            {
+              "name": "units",
+              "value": "metric"
+            },
+            {
+              "name": "lang",
+              "value": "pt_br"
+            },
+            {
+              "name": "appid",
+              "value": "={{ $env.OPENWEATHER_API_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "df835618-d54e-46b6-b913-3fbf8f6483c2",
+      "name": "Consultar OpenWeather",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1408,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "resposta-valida",
+              "leftValue": "={{ $json.main?.temp }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "3897ce5f-9c2f-438b-a0b1-3375610a881f",
+      "name": "Validar Resposta da API",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1168,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Capturar Mensagem').item.json.chatId }}",
+        "text": "={{ $json.output }} || ",
+        "additionalFields": {}
+      },
+      "id": "1b59fcdd-90f3-42e7-b3df-6b83e2835a61",
+      "name": "Telegram - Enviar Sucesso",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        272,
+        176
+      ],
+      "webhookId": "4031c7a6-8fc2-4028-830a-3de2496d8f3f",
+      "credentials": {
+        "telegramApi": {
+          "id": "hM9yV5btB4oFwoRy",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "api-error",
+              "name": "message",
+              "value": "={{ `❌ Cidade não encontrada ou resposta inválida.\n\nUse o formato:\nCidade,UF,BR\n\nExemplo:\nSão Paulo,SP,BR` }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d6e5b032-a842-41b3-92b0-62367e116966",
+      "name": "Formatar Erro da API",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -928,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "input-error",
+              "name": "message",
+              "value": "={{ `❌ Cidade não encontrada ou resposta inválida.\n\nUse o formato:\nCidade,UF,BR\n\nExemplo:\nSão Paulo,SP,BR` }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "74c3c481-2a20-4f92-876e-7600c5be1f7c",
+      "name": "Formatar Erro de Entrada",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1648,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Capturar Mensagem').item.json.chatId }}",
+        "text": "={{ $json.message }}",
+        "additionalFields": {}
+      },
+      "id": "bb433725-890e-475c-a4c6-c3167083e3e7",
+      "name": "Telegram - Enviar Erro de Entrada",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -544,
+        576
+      ],
+      "webhookId": "1b21d7e7-12b5-457c-ba34-0c76f259c869",
+      "credentials": {
+        "telegramApi": {
+          "id": "hM9yV5btB4oFwoRy",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b7f46c50-bb7b-4efc-989c-2db04a97de76",
+              "name": "city",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "5d664dbe-8694-42cd-9df7-58cdc117412a",
+              "name": "temperature",
+              "value": "={{ Math.round($json.main.temp) }}",
+              "type": "string"
+            },
+            {
+              "id": "4bec04d1-919f-470e-a3be-37360efddfe2",
+              "name": "feelsLike",
+              "value": "={{ Math.round($json.main.feels_like) }}",
+              "type": "string"
+            },
+            {
+              "id": "5b2d37c2-3e73-4c6b-8d9d-8e2f30f82fcf",
+              "name": "description",
+              "value": "={{ $json.weather?.[0]?.description || 'sem descrição disponível' }}",
+              "type": "string"
+            },
+            {
+              "id": "869666c0-815e-4a3b-9d68-d72bd00bcd2e",
+              "name": "humidity",
+              "value": "={{ $json.main.humidity }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -928,
+        192
+      ],
+      "id": "d3210dfb-a1a3-414c-a6a0-03ae0449cdb6",
+      "name": "Preparar Dados para IA"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Você é o Clima AI Bot, um assistente amigável especializado em apresentar informações meteorológicas.\n\nSua responsabilidade é SOMENTE transformar os dados meteorológicos fornecidos em uma mensagem divertida, curta e útil para o usuário.\n\nREGRAS IMPORTANTES:\n\n1. Use exclusivamente os dados fornecidos.\n2. Nunca invente temperatura, sensação térmica, umidade, cidade ou condições climáticas.\n3. Não altere números fornecidos.\n4. Responda sempre em português brasileiro.\n5. Seja lúdico, amigável e natural.\n6. Dê uma sugestão breve de atividade ou cuidado adequado à temperatura atual.\n7. A sugestão deve ser genérica e baseada apenas na temperatura e nas condições fornecidas.\n8. Não faça recomendações médicas.\n9. Não afirme previsões futuras.\n10. Não diga que pesquisou informações externas.\n11. Mantenha a resposta curta para ser enviada pelo Telegram.\n\nDados meteorológicos:\n\nCidade: {{ $json.city }}\nTemperatura atual: {{ $json.temperature }}°C\nSensação térmica: {{ $json.feelsLike }}°C\nCondição: {{ $json.description }}\nUmidade: {{ $json.humidity }}%\n\nColoquei uma ID no objeto em enviar\n\nGere apenas a mensagem final para o usuário.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -656,
+        192
+      ],
+      "id": "398cbe99-d5f3-4599-9efe-5b2902e201e5",
+      "name": "Gerar Resposta Lúdica",
+      "retryOnFail": true,
+      "waitBetweenTries": 3000,
+      "alwaysOutputData": true,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.1-flash-lite",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -656,
+        416
+      ],
+      "id": "343296f0-1f44-43f3-b7ff-46bdef259bad",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "9TzOoFtQdrxEUHcg",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success-message",
+              "name": "message",
+              "value": "=🌤️ A temperatura em {{ $json.city }} é de {{ Math.round($json.temperature) }}°C.",
+              "type": "string"
+            },
+            {
+              "id": "cfa9fa53-50fa-4e1a-a48d-c307b199331b",
+              "name": "Output",
+              "value": "={{ `🌤️ A temperatura em ${$('Preparar Dados para IA').item.json.city} é de ${$('Preparar Dados para IA').item.json.temperature}°C.` }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f0c0f764-1daf-4201-983e-1f68d5d298f7",
+      "name": "Fallback - Formatar Resposta Determinística",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -128,
+        272
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Capturar Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Capturar Mensagem": {
+      "main": [
+        [
+          {
+            "node": "Validar Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar Entrada": {
+      "main": [
+        [
+          {
+            "node": "Normalizar Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Formatar Erro de Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizar Entrada": {
+      "main": [
+        [
+          {
+            "node": "Consultar OpenWeather",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar OpenWeather": {
+      "main": [
+        [
+          {
+            "node": "Validar Resposta da API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar Resposta da API": {
+      "main": [
+        [
+          {
+            "node": "Preparar Dados para IA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Formatar Erro da API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Erro da API": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Enviar Erro de Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatar Erro de Entrada": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Enviar Erro de Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Gerar Resposta Lúdica",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Dados para IA": {
+      "main": [
+        [
+          {
+            "node": "Gerar Resposta Lúdica",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerar Resposta Lúdica": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Enviar Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fallback - Formatar Resposta Determinística",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fallback - Formatar Resposta Determinística": {
+      "main": [
+        [
+          {
+            "node": "Telegram - Enviar Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "f08b07b3-524f-4167-bba7-867f82a8144e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1b16b1df538ba12dc3f97edbb85caa7050d46c148134290feba80f8236c83db9"
+  },
+  "nodeGroups": [],
+  "id": "wW1fhUTfTjJ7EI9c",
+  "tags": []
+}
